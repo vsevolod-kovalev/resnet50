@@ -6,6 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from PIL import Image
 import requests
+from selenium.webdriver.chrome.options import Options
 from io import BytesIO
 from constants import class_map
 
@@ -28,9 +29,16 @@ def save_image(img_url, save_dir, count):
     except Exception as e:
         print(f"Could not save image {count}: {e}")
 
-MAX_SCROLLS = 5
+MAX_SCROLLS = 2
 def scrape_images_with_alt(query, save_dir, start_count):
-    driver = webdriver.Chrome()
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--window-size=1920x1080")
+
+    driver = webdriver.Chrome(options=chrome_options)
     driver.get("https://www.google.com/imghp")
     time.sleep(1)
     
@@ -50,7 +58,7 @@ def scrape_images_with_alt(query, save_dir, start_count):
     for img_url in images_with_alt:
         save_image(img_url, save_dir, img_count)
         img_count += 1
-        print(f"Saved image {img_count}/{len(images_with_alt)} from query '{query}'")
+        print(f"Saved image {img_count} from query '{query}'")
 
     driver.quit()
     return img_count
@@ -83,8 +91,9 @@ if __name__ == "__main__":
     for key, queries in class_map.items():
         save_dir = os.path.join("data", str(key))
         create_directory(save_dir)
+        count = 0
         for query in queries:
             print(f"Scraping images for query: '{query}'")
-            start_count = scrape_images_with_alt(query, save_dir, 0)
-            print("Removing small images...")
-            remove_small_images(save_dir, min_size=120)
+            count = scrape_images_with_alt(query, save_dir, count)
+        print("Removing small images...")
+        remove_small_images(save_dir, min_size=120)
